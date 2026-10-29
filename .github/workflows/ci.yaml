@@ -11,5 +11,6 @@ jobs:
       - uses: astral-sh/setup-uv@v6
       - run: uv sync --extra test --locked
       - run: uv run python scripts/generate_schemas.py --check
-      - run: uv run auto-merge-agent validate-config
+      - run: uv run auto-merge-agent --config-root examples validate-config
+      - run: uv run auto-merge-agent --config-root deploy/policy validate-config
       - run: uv run pytest -q
