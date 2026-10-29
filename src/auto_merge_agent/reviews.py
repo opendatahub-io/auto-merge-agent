@@ -9,11 +9,12 @@ from .types import Finding, MergeRisk, PullRequestSnapshot, ReviewArtifact, Revi
 _RISK = re.compile(r"\*\*Merge Risk:\*\*\s*[*_]*[^\w_]*(Minimal|Low|Moderate|High|Critical)(?=$|[^A-Za-z])", re.I)
 _RISK_SECTION = re.compile(r"<!-- final_review_risk_start -->(.*?)<!-- final_review_risk_end -->", re.S)
 _COVERAGE = re.compile(r"<!-- final_review_risk_coverage:(\{[^\n]+\}) -->")
-_SEVERITY = re.compile(r"^\*\*[^\n|]+\*\*\s*\|\s*\*\*[^\w]*(Critical|Major|Minor|Trivial|Info)\*\*", re.I)
+_BOLD_TOKEN = re.compile(r"\*\*([^*\n]+?)\*\*")
+_SEVERITY_WORD = re.compile(r"^(?:<[^>]+>\s*)*\W*(Critical|Major|Minor|Trivial|Info)$", re.I)
 _OUTSIDE_COUNT = re.compile(r"Outside diff range comments \((\d+)\)")
 _ACTIONABLE_COUNT = re.compile(r"Actionable comments posted:\s*(\d+)")
 _OUTSIDE_ITEM = re.compile(
-    r"<summary><strong>[^<]*?(Critical|Major|Minor|Trivial|Info)</strong>\s*·\s*([^<]+)",
+    r"<summary><strong>(?:<[^>]+>\s*)*[^\w<]*(Critical|Major|Minor|Trivial|Info)</strong>\s*·\s*([^<]+)",
     re.I,
 )
 _SEVERITY_MAP = {
@@ -23,6 +24,41 @@ _SEVERITY_MAP = {
     "trivial": Severity.low,
     "info": Severity.info,
 }
+
+
+def _header_line(body: str) -> str:
+    """Return the first meaningful line: CodeRabbit findings may open with HTML comment markers."""
+    for line in body.splitlines():
+        stripped = line.strip()
+        if stripped and not stripped.startswith("<!--"):
+            return line
+    return ""
+
+
+def _finding_severity(body: str) -> Severity | None:
+    """Read a finding's severity from its header line in either CodeRabbit format.
+
+    Older headers lead with ``**Category** | **🟠 Major** | **⚡ Quick win``;
+    newer ones with ``**<picture …></picture> Minor** · **Category** · **Quick win**``
+    after an HTML comment marker. Exactly one bold token on the header line may
+    be a bare severity word; anything else is an unrecognized format.
+    """
+    tokens = _BOLD_TOKEN.findall(_header_line(body))
+    if len(tokens) < 2:
+        return None
+    words = [m.group(1) for token in tokens if (m := _SEVERITY_WORD.match(token))]
+    if len(words) != 1:
+        return None
+    return _SEVERITY_MAP[words[0].lower()]
+
+
+def _finding_title(body: str) -> str:
+    lines = body.splitlines()
+    for index, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped and not stripped.startswith("<!--"):
+            return next((later.strip("* ") for later in lines[index + 1:] if later.startswith("**")), "CodeRabbit finding")
+    return "CodeRabbit finding"
 
 
 class CodeRabbitReviewer:
@@ -79,13 +115,13 @@ class CodeRabbitReviewer:
                         evidence_url=artifact.url,
                     )
                 continue
-            match = _SEVERITY.search(artifact.body)
-            if not match:
+            severity = _finding_severity(artifact.body)
+            if severity is None:
                 if "cr-indicator-types:potential_issue" in artifact.body:
                     return ReviewAssessment(state="unavailable", reason="CodeRabbit finding has unknown severity", evidence_url=artifact.url)
                 continue
-            title = next((line.strip("* ") for line in artifact.body.splitlines()[1:] if line.startswith("**")), "CodeRabbit finding")
-            findings.append(Finding(severity=_SEVERITY_MAP[match.group(1).lower()], url=artifact.url, summary=title))
+            title = _finding_title(artifact.body)
+            findings.append(Finding(severity=severity, url=artifact.url, summary=title))
         for artifact in artifacts:
             if artifact.kind != "review" or artifact.author.lower() != "coderabbitai[bot]" or artifact.commit_id != pr.head_sha:
                 continue
