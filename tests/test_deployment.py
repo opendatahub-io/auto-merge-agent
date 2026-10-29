@@ -9,6 +9,7 @@ what the deployed service enforces.
 """
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import subprocess
@@ -89,8 +90,10 @@ def assert_packaging_complete(policy_root: Path, overlay: Path, description: str
     assert not extra, f"{description}: mounted files missing from policy root: {extra}"
     for path, content in expected.items():
         assert mounted[path] == content, f"{description}: mounted {path} differs from the policy root"
-    total = sum(len(key) + len(value) for key, value in config_map["data"].items())
-    assert total <= MAX_POLICY_BYTES, (
+    # Measure the serialized object: the annotation is the JSON encoding of the
+    # whole ConfigMap, so character counts miss UTF-8 inflation of non-ASCII text.
+    payload = json.dumps(config_map).encode("utf-8")
+    assert len(payload) <= MAX_POLICY_BYTES, (
         f"{description}: policy bundle exceeds the {MAX_POLICY_BYTES // 1000} KB ConfigMap budget"
     )
 

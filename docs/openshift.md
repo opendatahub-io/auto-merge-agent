@@ -260,10 +260,12 @@ Kustomize 5.6.0, kubectl, and uv installed:
 docker build -f Containerfile -t auto-merge-agent:ci .
 kind create cluster --name automerge
 kind load docker-image auto-merge-agent:ci --name automerge
-uv sync --locked
+uv sync --extra deployment --locked
 uv run python scripts/smoke_deployment.py auto-merge-agent:ci
 kind delete cluster --name automerge
 ```
 
 Use a disposable kind cluster: the script creates resources and deliberately
-deploys an invalid policy before testing rollback. It uses port 18000 locally.
+deploys an invalid policy before testing rollback. It talks to the cluster
+through the Kubernetes Python client (pods, rollout status, exec,
+port-forward) and kubectl (server-side apply of the rendered manifests).
