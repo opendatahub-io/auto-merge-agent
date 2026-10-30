@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ../../base
+  - route.yaml
+  - network-policy.yaml
+components:
+  - ../../policy
+images:
+  - name: auto-merge-agent
+    newName: quay.io/opendatahub/auto-merge-agent
+    newTag: sha-24e817b7e3658404222ec9bcaafa50e92677d3d8

@@ -38,6 +38,41 @@ def test_major_finding_normalized_to_high():
     assert assessment.state == "complete"
     assert assessment.merge_risk.value == "moderate"
     assert [finding.severity.value for finding in assessment.findings] == ["high"]
+    assert assessment.findings[0].summary == "Fix compilation."
+
+
+def test_icon_severity_finding_header_is_parsed():
+    """CodeRabbit's newer comment format: an icon-prefixed severity leads, separated by middot."""
+    current = pr()
+    review = ReviewArtifact(kind="review", id=7, author="coderabbitai[bot]", commit_id=current.head_sha,
+                            url="https://example.com/review", body="")
+    issue = ReviewArtifact(kind="review_comment", review_id=7, author="coderabbitai[bot]", commit_id=current.head_sha,
+                           original_commit_id=current.head_sha,
+                           body=(
+                               "<!-- coderabbit-ai-generated:v1 -->\n\n"
+                               '**<picture><img src="https://example.com/amber-16.svg" width="16" height="16" alt=""></picture> Minor**'
+                               " · **Data Integrity & Integration** · **Quick win**\n\n"
+                               "**Document the trusted-approver prerequisite.**\n\n"
+                               "<!-- cr-indicator-types:potential_issue -->"
+                           ),
+                           url="https://example.com/finding")
+    assessment = CodeRabbitReviewer().assess(current, [summary(current.head_sha, "Moderate"), review, issue])
+    assert assessment.state == "complete"
+    assert [finding.severity.value for finding in assessment.findings] == ["medium"]
+    assert assessment.findings[0].summary == "Document the trusted-approver prerequisite."
+
+
+def test_ambiguous_severity_header_fails_closed():
+    current = pr()
+    review = ReviewArtifact(kind="review", id=7, author="coderabbitai[bot]", commit_id=current.head_sha,
+                            url="https://example.com/review", body="")
+    issue = ReviewArtifact(kind="review_comment", review_id=7, author="coderabbitai[bot]", commit_id=current.head_sha,
+                           original_commit_id=current.head_sha,
+                           body="**Critical** · **Major**\n\n**Two severity words.**\n<!-- cr-indicator-types:potential_issue -->",
+                           url="https://example.com/finding")
+    assessment = CodeRabbitReviewer().assess(current, [summary(current.head_sha), review, issue])
+    assert assessment.state == "unavailable"
+    assert assessment.reason == "CodeRabbit finding has unknown severity"
 
 
 def test_risk_is_read_only_from_the_covered_final_assessment():

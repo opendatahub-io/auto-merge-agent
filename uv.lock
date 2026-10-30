@@ -183,6 +183,18 @@ wheels = [
 ]
 
 [[package]]
+name = "aiohttp-retry"
+version = "2.9.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "aiohttp" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/9d/61/ebda4d8e3d8cfa1fd3db0fb428db2dd7461d5742cea35178277ad180b033/aiohttp_retry-2.9.1.tar.gz", hash = "sha256:8eb75e904ed4ee5c2ec242fefe85bf04240f685391c4879d8f541d6028ff01f1", size = 13608, upload-time = "2024-11-06T10:44:54.574Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1a/99/84ba7273339d0f3dfa57901b846489d2e5c2cd731470167757f1935fffbd/aiohttp_retry-2.9.1-py3-none-any.whl", hash = "sha256:66d2759d1921838256a05a3f80ad7e724936f083e35be5abb5e16eed6be6dc54", size = 9981, upload-time = "2024-11-06T10:44:52.917Z" },
+]
+
+[[package]]
 name = "aiosignal"
 version = "1.4.0"
 source = { registry = "https://pypi.org/simple" }
@@ -268,6 +280,9 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
+deployment = [
+    { name = "kubernetes" },
+]
 test = [
     { name = "pytest" },
     { name = "pytest-asyncio" },
@@ -278,6 +293,7 @@ test = [
 requires-dist = [
     { name = "fastapi", specifier = ">=0.115,<1" },
     { name = "httpx", specifier = ">=0.27,<1" },
+    { name = "kubernetes", marker = "extra == 'deployment'", specifier = ">=31,<38" },
     { name = "langchain", specifier = ">=1,<1.4.4" },
     { name = "langchain-openai", specifier = ">=1,<2" },
     { name = "langgraph", specifier = ">=1,<2" },
@@ -291,7 +307,7 @@ requires-dist = [
     { name = "unidiff", specifier = ">=0.7,<1" },
     { name = "uvicorn", specifier = ">=0.30,<1" },
 ]
-provides-extras = ["test"]
+provides-extras = ["test", "deployment"]
 
 [[package]]
 name = "blinker"
@@ -602,7 +618,7 @@ resolution-markers = [
     "python_full_version < '3.12' and sys_platform != 'emscripten' and sys_platform != 'win32'",
 ]
 dependencies = [
-    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" } },
+    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/58/01/1253e6698a07380cd31a736d248a3f2a50a7c88779a1813da27503cadc2a/contourpy-1.3.3.tar.gz", hash = "sha256:083e12155b210502d0bca491432bb04d56dc3432f95a979b429f2848c3dbe880", size = 13466174, upload-time = "2025-07-26T12:03:12.549Z" }
 wheels = [
@@ -692,7 +708,7 @@ resolution-markers = [
     "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform != 'emscripten' and sys_platform != 'win32'",
 ]
 dependencies = [
-    { name = "numpy", version = "2.5.3", source = { registry = "https://pypi.org/simple" } },
+    { name = "numpy", version = "2.5.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/83/5a/a55177dd22553a277388e8a1b3220e92de91bacb28356cdc73caa240121d/contourpy-1.4.0.tar.gz", hash = "sha256:20156f5a1ac4f8ce02656e39a61e82164a3d359796dc8026f75b062783d500e1", size = 13323726, upload-time = "2026-09-11T19:05:05.808Z" }
 wheels = [
@@ -881,6 +897,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/88/7f/731ff914b0255d3d065f45fd4e626d4b8c95dbcbaada049f337a6ac16410/docker-7.2.0.tar.gz", hash = "sha256:cebb93773d334f778e023a7ee352a8d6e13ab1bd3b863a4d4a59dec897df43ac", size = 118731, upload-time = "2026-07-09T14:53:46.39Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/75/23/529140fe1aab80fc6992f93a706deec709140a6397439139a054e1515c45/docker-7.2.0-py3-none-any.whl", hash = "sha256:a3f45fdeb9165e2d25d9a1d02ddf3bc70fb572cf5ebbf9b58558c22caf29b71f", size = 148775, upload-time = "2026-07-09T14:53:45.224Z" },
+]
+
+[[package]]
+name = "durationpy"
+version = "0.11"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/b0/5d/5f8571bd5dedc80863191621ac4be001f3f3dd8315d2ec078705dab7dec1/durationpy-0.11.tar.gz", hash = "sha256:181898e1ae282e288f0a2291829656bf1b6b3aadf30a97993b85db4943642905", size = 3582, upload-time = "2026-08-26T13:56:00.991Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e6/c4/ebdf7837bc4ef6fd98cfb013c28855bb358467bf86c1af011bbc21e21df0/durationpy-0.11-py3-none-any.whl", hash = "sha256:a739fe2b8972c250ff72f8e2c488d18cf25f7b852f49ee76048775d5171df30c", size = 4133, upload-time = "2026-08-26T13:55:59.456Z" },
 ]
 
 [[package]]
@@ -1209,8 +1234,8 @@ name = "httpcore2"
 version = "2.13.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "h11" },
-    { name = "truststore" },
+    { name = "h11", marker = "sys_platform != 'emscripten'" },
+    { name = "truststore", marker = "sys_platform != 'emscripten'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/cb/f3/1db7aa2bc2524062192bb0e0323969492d1883152a232fe36eea65f4e35c/httpcore2-2.13.1.tar.gz", hash = "sha256:e0aa977abe17e69a3b820a24542a6fa88702676d83880b8d194dcd18408e5103", size = 68071, upload-time = "2026-09-23T07:47:22.372Z" }
 wheels = [
@@ -1592,6 +1617,29 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/f4/ce/a7dc71353dd06a4cbe02222773f52d4a28c81e5a452a75797f8ed113dc99/kiwisolver-1.5.1-pp311-pypy311_pp73-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:5daa1f19e097050b9c4d9a78fcc9263cb96c9dfae08037ddc1b7c4ad1889f2a2", size = 79891, upload-time = "2026-08-28T10:28:22.936Z" },
     { url = "https://files.pythonhosted.org/packages/10/b1/d61c61a84ff85d1a36a99df2c152b59ffedb1d356c598902aba44abcdb60/kiwisolver-1.5.1-pp311-pypy311_pp73-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:cdaeeb6c350106df6bf9d873395973e5f066a9713200b72cd64f55d0a3eafab6", size = 77605, upload-time = "2026-08-28T10:28:24.322Z" },
     { url = "https://files.pythonhosted.org/packages/d3/52/5aef56f21a460a6e43ab3cdfc7697d59d7b87deb0ec97a0f7b91aa4a521b/kiwisolver-1.5.1-pp311-pypy311_pp73-win_amd64.whl", hash = "sha256:17851e5dad4484be0cbccbde3b15331deae036de9aebd45eed964487802b172f", size = 98465, upload-time = "2026-08-28T10:28:25.696Z" },
+]
+
+[[package]]
+name = "kubernetes"
+version = "37.0.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "aiohttp" },
+    { name = "aiohttp-retry" },
+    { name = "certifi" },
+    { name = "durationpy" },
+    { name = "pydantic" },
+    { name = "python-dateutil" },
+    { name = "pyyaml" },
+    { name = "requests" },
+    { name = "requests-oauthlib" },
+    { name = "typing-extensions" },
+    { name = "urllib3" },
+    { name = "websocket-client" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b9/c3/efd33fa9ae254ecdc35ebc128f99e8034d5a5a8c625f92e5d2173f929b53/kubernetes-37.0.1.tar.gz", hash = "sha256:e41db0a95615c2388680a2d556df33fd0f27a5717c9b5df5857e475c196c2f10", size = 3358265, upload-time = "2026-10-09T17:13:41.072Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8a/de/ac1904ac7fb651426e5698f56a268669a1ca3d63378629bacbf057b25e75/kubernetes-37.0.1-py2.py3-none-any.whl", hash = "sha256:a313a482361506340b5972cabaf20a7ee16ec8713e73325bf699b783a40464a9", size = 7511310, upload-time = "2026-10-09T17:13:38.933Z" },
 ]
 
 [[package]]
@@ -2367,6 +2415,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/a1/d2/4e1014173aa3c55e6a756e0e567290743a6ab33a288460374d7ef6bcd239/numpy-2.5.3-cp315-cp315t-win32.whl", hash = "sha256:f54660b0eb6b0b9f36e7fe1cdfdff472028dd0d14acd9b9b65098efbad059469", size = 6330292, upload-time = "2026-09-06T16:27:38.149Z" },
     { url = "https://files.pythonhosted.org/packages/6c/b0/ff5658a58199b7bcaad87bf260eef6713d9d42cca4e028f935b4fc5fbac6/numpy-2.5.3-cp315-cp315t-win_amd64.whl", hash = "sha256:1aad64d99730d013cfc6debafed22783b4fc5a7f4b8bc744d2d8cf7dcc880551", size = 12884918, upload-time = "2026-09-06T16:27:40.965Z" },
     { url = "https://files.pythonhosted.org/packages/fb/0b/b12a2df5d1b774bd9007a6fdff9381145b6223d37f11afc9c37ab0efd9a1/numpy-2.5.3-cp315-cp315t-win_arm64.whl", hash = "sha256:befa1ae5bd6030b3f512b43ff3fa5290bbed6b84411a44244b14adf835f5b89d", size = 10850807, upload-time = "2026-09-06T16:27:43.868Z" },
+]
+
+[[package]]
+name = "oauthlib"
+version = "4.0.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/7a/d8/a1bcc8ba112a627f8ffbdc212a78ce18d3ac07e91a5ca65d27918eee25a1/oauthlib-4.0.0.tar.gz", hash = "sha256:efb274799819440f95b4ab3b818869f1ce9ae26c5beacba0201d1a1b76b54f86", size = 187232, upload-time = "2026-09-28T06:01:18.77Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d9/f4/78229a1066068ca14fc60fb26cf7381cabe4382261392b90e5f9552722d4/oauthlib-4.0.0-py3-none-any.whl", hash = "sha256:624c28c13a0a59cabf9747dfa52af63be3e512a7f2714df16e91b5b3a145e6cd", size = 159715, upload-time = "2026-09-28T06:01:17.008Z" },
 ]
 
 [[package]]
@@ -3388,6 +3445,19 @@ wheels = [
 ]
 
 [[package]]
+name = "requests-oauthlib"
+version = "2.0.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "oauthlib" },
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/42/f2/05f29bc3913aea15eb670be136045bf5c5bbf4b99ecb839da9b422bb2c85/requests-oauthlib-2.0.0.tar.gz", hash = "sha256:b3dffaebd884d8cd778494369603a9e7b58d29111bf6b41bdc2dcd87203af4e9", size = 55650, upload-time = "2024-03-22T20:32:29.939Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3b/5d/63d4ae3b9daea098d5d6f5da83984853c1bbacd5dc826764b249fe119d24/requests_oauthlib-2.0.0-py2.py3-none-any.whl", hash = "sha256:7dd8a5c40426b779b0868c404bdef9768deccf22749cde15852df527e6269b36", size = 24179, upload-time = "2024-03-22T20:32:28.055Z" },
+]
+
+[[package]]
 name = "requests-toolbelt"
 version = "1.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -3480,7 +3550,7 @@ resolution-markers = [
     "python_full_version < '3.12' and sys_platform != 'emscripten' and sys_platform != 'win32'",
 ]
 dependencies = [
-    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" } },
+    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/7a/97/5a3609c4f8d58b039179648e62dd220f89864f56f7357f5d4f45c29eb2cc/scipy-1.17.1.tar.gz", hash = "sha256:95d8e012d8cb8816c226aef832200b1d45109ed4464303e997c5b13122b297c0", size = 30573822, upload-time = "2026-02-23T00:26:24.851Z" }
 wheels = [
@@ -3559,7 +3629,7 @@ resolution-markers = [
     "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform != 'emscripten' and sys_platform != 'win32'",
 ]
 dependencies = [
-    { name = "numpy", version = "2.5.3", source = { registry = "https://pypi.org/simple" } },
+    { name = "numpy", version = "2.5.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/7e/74/66de6258867beb2ef08f35f9f2ac017a52cacd5081714d239ff1a442d458/scipy-1.18.1.tar.gz", hash = "sha256:52c4b7422442aba924d03ad4019852b08a92e64ea187b933135687bfe2747307", size = 30781235, upload-time = "2026-08-21T23:28:50.599Z" }
 wheels = [
@@ -4054,6 +4124,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/63/80/6a03356d8ee38261e3a78cf89ee03d8e7f12c572d969237be00869e2dc73/wcwidth-0.9.2-cp315-cp315t-win_amd64.whl", hash = "sha256:33df042f96c61ed3cd5fb3742fba427553a635bc578799857a48aa79f774a0b9", size = 605441, upload-time = "2026-10-05T00:24:04.052Z" },
     { url = "https://files.pythonhosted.org/packages/0c/48/1a308a86a833fd12ff7a08d0d2491ff4a72c8a92d12f5ead8317630f771e/wcwidth-0.9.2-cp315-cp315t-win_arm64.whl", hash = "sha256:48719a9bc76c2f84238693fe5013571fa5beffa3621cf228f1f3a9e30dae84b8", size = 605885, upload-time = "2026-10-05T00:23:54.274Z" },
     { url = "https://files.pythonhosted.org/packages/9c/b4/0bfa065af506540d9d558e3e5548cff00bc1f9b24e6e2a8512498e8628de/wcwidth-0.9.2-py3-none-any.whl", hash = "sha256:89ca642c5bf0101157a09366be69fad0379db1f700ae39a920e103234573670e", size = 301667, upload-time = "2026-10-05T00:23:21.097Z" },
+]
+
+[[package]]
+name = "websocket-client"
+version = "1.9.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/d8/cb/a5abcc2891249f393827c650c6296660ce40374ac22d99ab9aea41f9d2a2/websocket_client-1.9.2.tar.gz", hash = "sha256:0fcb57545848be86992e128218fd96dd87a6769ffdb1a968dff79632b85604d0", size = 84110, upload-time = "2026-08-31T14:08:40.964Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d5/d2/cc4dc1271e464942db7ee278baae2daa99ee77cb2af744025c04da585a3e/websocket_client-1.9.2-py3-none-any.whl", hash = "sha256:e1a673830a9c7bfa47b1cd3d5e4178f4c9651d80a4eab02c9c23a1c3ec6250ce", size = 95786, upload-time = "2026-08-31T14:08:39.899Z" },
 ]
 
 [[package]]
