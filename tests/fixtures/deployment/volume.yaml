@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auto-merge-agent
+spec:
+  template:
+    spec:
+      volumes:
+        - name: policy
+          configMap:
+            name: auto-merge-agent-policy
+            items:
+              - key: OWNERS
+                path: OWNERS
+              - key: global.yaml
+                path: config/global.yaml
+              - key: ci-owner-fixture-config.yaml
+                path: configs/github.com/ci-owner/fixture/config.yaml
+              - key: ci-owner-fixture-OWNERS
+                path: configs/github.com/ci-owner/fixture/OWNERS

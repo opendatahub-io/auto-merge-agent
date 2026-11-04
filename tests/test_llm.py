@@ -23,7 +23,7 @@ async def test_truncated_patch_is_not_sent_to_model(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_allowed_model_id_uses_exact_api_model_without_temperature(monkeypatch):
-    config = ConfigStore(Path(__file__).resolve().parents[1]).load("github.com", "mprahl", "test-automerge")
+    config = ConfigStore(Path(__file__).resolve().parents[1] / "examples").load("github.com", "mprahl", "test-automerge")
     calls = []
 
     class FakeModel:
@@ -48,7 +48,7 @@ async def test_allowed_model_id_uses_exact_api_model_without_temperature(monkeyp
 
 @pytest.mark.asyncio
 async def test_each_llm_rule_supplies_its_own_checklist_entry(monkeypatch):
-    config = ConfigStore(Path(__file__).resolve().parents[1]).load("github.com", "mprahl", "test-automerge")
+    config = ConfigStore(Path(__file__).resolve().parents[1] / "examples").load("github.com", "mprahl", "test-automerge")
     rules = next(rule.all for rule in config.policy.rules if rule.name == "low-risk-maintenance")
     judge = LangChainJudge(config.allowed_models)
 
@@ -68,7 +68,7 @@ async def test_each_llm_rule_supplies_its_own_checklist_entry(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_repository_context_reaches_both_model_calls(monkeypatch):
-    config = ConfigStore(Path(__file__).resolve().parents[1]).load("github.com", "mprahl", "test-automerge")
+    config = ConfigStore(Path(__file__).resolve().parents[1] / "examples").load("github.com", "mprahl", "test-automerge")
     rules = next(rule.all for rule in config.policy.rules if rule.name == "low-risk-maintenance")
     judge = LangChainJudge(config.allowed_models)
     calls = []

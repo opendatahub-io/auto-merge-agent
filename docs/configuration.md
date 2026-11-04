@@ -1,6 +1,6 @@
 # Configuration
 
-Policies live in this repository. The agent reads them from the protected checkout used by the service, not from the pull request under evaluation.
+Policies live in this repository, split into two roots with the same layout: `deploy/policy/` is the production policy the deployed service reads, and `examples/` is a reference tree for local trials that is never deployed. The agent reads policies from the protected checkout used by the service, not from the pull request under evaluation.
 
 ## File layout and inheritance
 
@@ -16,7 +16,7 @@ OWNERS                                               # Required for config-repo 
 
 `config/global.yaml` supplies defaults and the global `allowed_models` list. Owner and repo `config.yaml` files override those defaults in that order. Nested maps merge; scalar values and lists replace inherited values. For example, `ci.ignore: []` clears inherited ignores, and `rules: []` clears inherited rules, including profile references. Repo config can override any owner-config setting. Profile references expand in place after inheritance is resolved, and rule names must be unique in the effective policy.
 
-Only `github.com` is implemented. Run `uv run auto-merge-agent validate-config` after every policy change; the agent-repo CI runs the same validation.
+Only `github.com` is implemented. Run `uv run auto-merge-agent --config-root <root> validate-config` (for example `--config-root deploy/policy`) after every policy change; the agent-repo CI runs the same validation on both roots.
 
 Validation includes standalone owner policies and every profile, even if no repository references them. Duplicate explicit YAML keys are rejected; normal YAML anchor/merge overrides remain supported.
 

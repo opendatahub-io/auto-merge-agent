@@ -31,11 +31,11 @@ export TARGET_OWNER=acme
 export TARGET_REPO=widget
 export TRUSTED_AUTHOR=maintainer
 export CI_CHECK=tests
-mkdir -p "configs/github.com/$TARGET_OWNER/$TARGET_REPO"
-cat > "configs/github.com/$TARGET_OWNER/$TARGET_REPO/OWNERS" <<EOF
+mkdir -p "examples/configs/github.com/$TARGET_OWNER/$TARGET_REPO"
+cat > "examples/configs/github.com/$TARGET_OWNER/$TARGET_REPO/OWNERS" <<EOF
 approvers: [$TRUSTED_AUTHOR]
 EOF
-cat > "configs/github.com/$TARGET_OWNER/$TARGET_REPO/config.yaml" <<EOF
+cat > "examples/configs/github.com/$TARGET_OWNER/$TARGET_REPO/config.yaml" <<EOF
 schema_version: 1
 enabled: true
 ci:
@@ -49,19 +49,19 @@ rules:
 EOF
 ```
 
-This starting policy considers only PRs authored by `TRUSTED_AUTHOR` that change `README.md` or files under `docs/`. It still requires passing CI and a completed CodeRabbit assessment of the current PR head. Other PRs are evaluated but do not qualify for automerge. The static rule does not need an OpenAI API key. If your CI is a commit status rather than a GitHub Actions check run, remove `source: github-actions` or set it to that status creator's login. See [configuration](docs/configuration.md) for more rules and limits.
+This starting policy goes under `examples/`, the reference policy root this checkout uses for local trials. It considers only PRs authored by `TRUSTED_AUTHOR` that change `README.md` or files under `docs/`. It still requires passing CI and a completed CodeRabbit assessment of the current PR head. Other PRs are evaluated but do not qualify for automerge. The static rule does not need an OpenAI API key. If your CI is a commit status rather than a GitHub Actions check run, remove `source: github-actions` or set it to that status creator's login. See [configuration](docs/configuration.md) for more rules and limits.
 
 ### 3. Validate and inspect decisions
 
 ```bash
-uv run auto-merge-agent validate-config
-uv run auto-merge-agent poll --once
+uv run auto-merge-agent --config-root examples validate-config
+uv run auto-merge-agent --config-root examples poll --once
 ```
 
 Run these commands from this repository's root. Validation checks the policy files. The one-time scan lists open PRs and logs a decision for each one. The default `AUTOMERGE_ACTIVE=false` means it makes no GitHub changes. For a full JSON decision on one PR, run:
 
 ```bash
-GITHUB_TOKEN="$(gh auth token)" uv run auto-merge-agent evaluate "$TARGET_OWNER" "$TARGET_REPO" 123
+GITHUB_TOKEN="$(gh auth token)" uv run auto-merge-agent --config-root examples evaluate "$TARGET_OWNER" "$TARGET_REPO" 123
 ```
 
 Replace `123` with the PR number. If `GITHUB_TOKEN` is already set, `uv run auto-merge-agent evaluate ...` uses it directly. A `waiting` result often means CI or the current-head CodeRabbit review has not arrived. A `human_review` result means a gate or rule did not pass; read its `reasons` before changing the policy.
@@ -69,7 +69,7 @@ Replace `123` with the PR number. If `GITHUB_TOKEN` is already set, `uv run auto
 ### 4. Poll continuously, then enable writes
 
 ```bash
-uv run auto-merge-agent poll --interval 900
+uv run auto-merge-agent --config-root examples poll --interval 900
 ```
 
 The first scan starts immediately; later scans start after each 900-second interval. Stop with Ctrl+C. The command retries failed repositories and PRs on the next scan. Keep it in shadow mode until its logged decisions match what you expect.
@@ -77,7 +77,7 @@ The first scan starts immediately; later scans start after each 900-second inter
 When ready, start one active process:
 
 ```bash
-AUTOMERGE_ACTIVE=true uv run auto-merge-agent poll --interval 900
+AUTOMERGE_ACTIVE=true uv run auto-merge-agent --config-root examples poll --interval 900
 ```
 
 Active mode can merge **any eligible open PR** in every enabled repository config in this checkout, including PRs opened before the process started. It posts an `automerge/policy` commit status, may comment, and requests a merge guarded by the evaluated head SHA. Keep that status informational in branch rules; if it is required, its pending or failed state can block the normal human merge path. [GitHub allows token users to write commit statuses, while check-run writes are reserved for Apps](https://docs.github.com/en/rest/checks/runs). Start only one poll process for a given config checkout.
@@ -88,7 +88,7 @@ For another config location, put `--config-root /path/to/policies` before `poll`
 
 | Symptom | Check |
 | --- | --- |
-| No repositories or PR decisions appear | Run from this checkout's root, check the `configs/github.com/<owner>/<repo>/config.yaml` path and `enabled: true`, and confirm the repository has open PRs. |
+| No repositories or PR decisions appear | Run from this checkout's root, check the `examples/configs/github.com/<owner>/<repo>/config.yaml` path and `enabled: true`, and confirm the repository has open PRs. |
 | GitHub returns 401 or 403 | Check `gh auth status` or the `GITHUB_TOKEN` override, repository access, and [token permissions](docs/deployment.md#run-with-a-github-token). |
 | Decision waits for CI | Match `ci.expected.name` to the exact check name. Use `source: github-actions` for GitHub Actions check runs; remove it when unsure which source is reported. |
 | Decision waits for review | Confirm CodeRabbit finished reviewing the PR's latest head commit. A new push makes the earlier review stale. |
@@ -118,16 +118,21 @@ You need Python 3.11+, [uv](https://docs.astral.sh/uv/), a repo policy in this c
 
 ```bash
 uv sync --extra test
-uv run auto-merge-agent validate-config
+uv run auto-merge-agent --config-root examples validate-config
 uv run pytest -q
-GITHUB_TOKEN="$(gh auth token)" uv run auto-merge-agent evaluate OWNER REPO PR_NUMBER
+GITHUB_TOKEN="$(gh auth token)" uv run auto-merge-agent --config-root examples evaluate OWNER REPO PR_NUMBER
 ```
 
 The CLI prints the decision as JSON. `--execute` enables writes and can merge the PR.
 
 ## Configure a repository
 
-Policies live in this agent's checkout:
+This checkout contains two policy roots with the same layout:
+
+- **`deploy/policy/`** — the production policy. This is the tree the deployed agent reads; changes here take effect on the next deployment.
+- **`examples/`** — a fully annotated reference tree for local trials and experimentation. It is never deployed.
+
+Each policy root has this layout:
 
 ```text
 config/global.yaml                         # Defaults and allowed model IDs
@@ -136,7 +141,7 @@ configs/github.com/<owner>/config.yaml     # Optional owner defaults
 configs/github.com/<owner>/<repo>/config.yaml
 configs/github.com/<owner>/<repo>/OWNERS   # Default trusted PR authors
 configs/github.com/<owner>/<repo>/context.md # Optional LLM guidance
-OWNERS                                     # Ownership of this agent repo
+OWNERS                                     # Ownership of the policy root
 ```
 
 Repo settings override owner settings; nested maps merge and lists replace inherited lists. The service evaluates only repositories with an enabled, valid config.
@@ -145,7 +150,7 @@ LLM rules automatically include the policy directory's `context.md` and the targ
 
 ### Example: dependency bumps and small fixes
 
-**1. Allow a model** in `config/global.yaml`:
+**1. Allow a model** in the policy root's `config/global.yaml` (for production, `deploy/policy/config/global.yaml`):
 
 ```yaml
 schema_version: 1
@@ -153,7 +158,7 @@ allowed_models: [gpt-6-sol]
 defaults: {}
 ```
 
-**2. Configure the repository.** For `github.com/acme/widget`, put `approvers: [maintainer]` in `configs/github.com/acme/widget/OWNERS`, then create `configs/github.com/acme/widget/config.yaml`:
+**2. Configure the repository.** For `github.com/acme/widget`, put `approvers: [maintainer]` in `configs/github.com/acme/widget/OWNERS` inside the policy root, then create `configs/github.com/acme/widget/config.yaml`:
 
 ```yaml
 schema_version: 1
@@ -182,9 +187,9 @@ rules:
           unclear security effects. If uncertain, return false.
 ```
 
-Replace `maintainer` and `tests` with the repository's GitHub login and CI check. The `go-dependencies` profile expands to a static rule for modified `go.mod` and `go.sum` files. Both alternatives require a trusted author, passing CI, and a current-head CodeRabbit review. If CodeRabbit also posts a status, that status must pass. A PR changing only `go.mod` and `go.sum` uses the static rule and skips the LLM, even though `small-maintenance` also matches. Other matching changes must pass both LLM criteria.
+Replace `maintainer` and `tests` with the repository's GitHub login and CI check. The `go-dependencies` profile expands to a static rule for modified `go.mod` and `go.sum` files; it ships only in the `examples/` tree, so a production policy root needs its own `profiles/go-dependencies.yaml` (or an inline rule) before `validate-config` will accept it. Both alternatives require a trusted author, passing CI, and a current-head CodeRabbit review. If CodeRabbit also posts a status, that status must pass. A PR changing only `go.mod` and `go.sum` uses the static rule and skips the LLM, even though `small-maintenance` also matches. Other matching changes must pass both LLM criteria.
 
-See [configuration](docs/configuration.md) for inheritance, every policy field, and decision semantics. Its [policy recipes](docs/configuration.md#policy-recipes) show Python dependency updates from Dependabot, small changes outside an auth package, and low-complexity changes that preserve the public API. The checked-in policy under `configs/` is another example.
+See [configuration](docs/configuration.md) for inheritance, every policy field, and decision semantics. Its [policy recipes](docs/configuration.md#policy-recipes) show Python dependency updates from Dependabot, small changes outside an auth package, and low-complexity changes that preserve the public API. The checked-in trees under `examples/` and `deploy/policy/` are living examples.
 
 JSON Schemas for [global](schemas/global.schema.json) and [org/repo](schemas/repository.schema.json) YAML provide editor completion. `validate-config` checks cross-file requirements such as model allowlisting and expected CI checks. Regenerate schemas after changing config models with `uv run python scripts/generate_schemas.py`.
 
@@ -197,6 +202,9 @@ JSON Schemas for [global](schemas/global.schema.json) and [org/repo](schemas/rep
 The service accepts webhooks at `/webhook`, exposes `/health`, and scans enabled repos at startup and every 15 minutes to recover work missed during downtime.
 
 See [deployment](docs/deployment.md) for permissions, events, environment variables, local webhook forwarding, and rollout steps. See [architecture](docs/architecture.md) for the evaluation flow, extension points, and MLflow tracing.
+
+For OpenShift, use the [container and Kustomize deployment guide](docs/openshift.md).
+CI validates both overlays and runs deployment lifecycle tests in kind without real GitHub or Quay credentials.
 
 ## Project scope
 

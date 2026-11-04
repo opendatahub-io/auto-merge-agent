@@ -1,0 +1,52 @@
+schema_version: 1
+enabled: true
+# Omitting trusted_authors uses approvers from this directory's OWNERS file.
+review:
+  plugin: coderabbit
+  max_merge_risk: moderate
+  max_finding_severity: medium
+ci:
+  expected:
+    - name: tests
+      source: github-actions
+limits:
+  max_changed_lines: 200
+rules:
+  - name: docs-only
+    type: changed_paths_only
+    paths:
+      - README.md
+      - docs/**
+  - name: low-risk-maintenance
+    all:
+      - name: maintenance-paths
+        type: changed_paths_only
+        # Workflow changes are supply-chain sensitive and stay out of this
+        # allowlist; they always require human review.
+        paths:
+          - "*.md"
+          - docs/**
+        statuses: [modified, added]
+      - name: maintenance-complexity
+        type: llm_complexity
+        max: low
+        model: gpt-6-sol
+        max_changed_lines: 100
+      - name: maintenance-safety
+        type: llm_custom
+        model: gpt-6-sol
+        max_changed_lines: 100
+        prompt: >-
+          Decide whether this is a small, well-scoped maintenance correction
+          that can merge without human review. Return false if it changes a
+          public API or interface contract, introduces an externally reachable
+          interface or new service, or has unclear compatibility, security, or
+          data-handling effects. Cosmetic human-readable text changes are okay
+          when the text is not a documented or machine-consumed contract.
+          If uncertain, return false.
+merge:
+  method: squash
+human_review:
+  comment: true
+  mention:
+    - "@accorvin"

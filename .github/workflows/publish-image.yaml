@@ -1,0 +1,50 @@
+name: Publish image
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - Containerfile
+      - .dockerignore
+      - pyproject.toml
+      - uv.lock
+      - src/**
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: quay-publish-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  ci:
+    # The Quay federation binding admits only refs/heads/main.
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/ci.yaml
+  publish:
+    needs: ci
+    permissions:
+      contents: read
+      id-token: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      QUAY_IMAGE: quay.io/opendatahub/auto-merge-agent
+      QUAY_ROBOT_USER: opendatahub+auto-merge-agent-publisher
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: runtime-image
+          path: ${{ runner.temp }}/image
+      - name: Exchange GitHub OIDC token for a short-lived Quay robot token
+        run: python3 scripts/ci/quay_oidc_login.py
+      - name: Publish the exact image tested by CI
+        run: |
+          docker load --input "$RUNNER_TEMP/image/auto-merge-agent.tar"
+          docker tag auto-merge-agent:ci "$QUAY_IMAGE:sha-$GITHUB_SHA"
+          docker push "$QUAY_IMAGE:sha-$GITHUB_SHA"
+          printf 'Published %s:sha-%s\n' "$QUAY_IMAGE" "$GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"

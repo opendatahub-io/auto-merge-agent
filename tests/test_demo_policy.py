@@ -11,6 +11,7 @@ from auto_merge_agent.types import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
+EXAMPLES = ROOT / "examples"
 REF = PullRequestRef(owner="mprahl", repo="test-automerge", number=1)
 
 
@@ -85,7 +86,7 @@ async def test_incomplete_patch_is_retrieved_before_llm(recovered):
     if recovered:
         forge.complete_files = [complete]
     judge = DemoJudge()
-    _, result = await EvaluationEngine(ConfigStore(ROOT), forge, DemoReviewer(), judge).evaluate(REF)
+    _, result = await EvaluationEngine(ConfigStore(EXAMPLES), forge, DemoReviewer(), judge).evaluate(REF)
     assert forge.diff_requests == 1
     assert result.state == ("eligible" if recovered else "human_review")
     assert judge.calls == (2 if recovered else 0)
@@ -99,7 +100,7 @@ async def test_complete_diff_failure_waits_without_calling_llm():
 
     forge = UnavailableForge([file("main.go").model_copy(update={"patch": None})])
     judge = DemoJudge()
-    _, result = await EvaluationEngine(ConfigStore(ROOT), forge, DemoReviewer(), judge).evaluate(REF)
+    _, result = await EvaluationEngine(ConfigStore(EXAMPLES), forge, DemoReviewer(), judge).evaluate(REF)
     assert result.state == "waiting"
     assert "Complete diff unavailable" in result.reasons[0]
     assert judge.calls == 0
@@ -108,7 +109,7 @@ async def test_complete_diff_failure_waits_without_calling_llm():
 @pytest.mark.asyncio
 async def test_dependency_bump_qualifies_without_llm():
     judge = DemoJudge()
-    engine = EvaluationEngine(ConfigStore(ROOT), DemoForge([file("go.mod"), file("go.sum", 2, 2)]), DemoReviewer(), judge)
+    engine = EvaluationEngine(ConfigStore(EXAMPLES), DemoForge([file("go.mod"), file("go.sum", 2, 2)]), DemoReviewer(), judge)
     _, result = await engine.evaluate(REF)
     assert result.state == "eligible"
     assert result.matched_rule == "go-dependencies"
@@ -118,7 +119,7 @@ async def test_dependency_bump_qualifies_without_llm():
 @pytest.mark.asyncio
 async def test_small_go_fix_uses_llm():
     judge = DemoJudge()
-    engine = EvaluationEngine(ConfigStore(ROOT), DemoForge([file("main.go")]), DemoReviewer(), judge)
+    engine = EvaluationEngine(ConfigStore(EXAMPLES), DemoForge([file("main.go")]), DemoReviewer(), judge)
     _, result = await engine.evaluate(REF)
     assert result.state == "eligible"
     assert result.matched_rule == "low-risk-maintenance"
@@ -128,7 +129,7 @@ async def test_small_go_fix_uses_llm():
 @pytest.mark.asyncio
 async def test_large_server_change_stops_before_llm():
     judge = DemoJudge()
-    engine = EvaluationEngine(ConfigStore(ROOT), DemoForge([file("main.go", 101, 0)]), DemoReviewer(), judge)
+    engine = EvaluationEngine(ConfigStore(EXAMPLES), DemoForge([file("main.go", 101, 0)]), DemoReviewer(), judge)
     _, result = await engine.evaluate(REF)
     assert result.state == "human_review"
     assert "llm_complexity limit 100 exceeded" in result.reasons[0]
@@ -138,7 +139,7 @@ async def test_large_server_change_stops_before_llm():
 @pytest.mark.asyncio
 async def test_small_server_change_can_be_rejected_by_llm():
     judge = DemoJudge("reject")
-    engine = EvaluationEngine(ConfigStore(ROOT), DemoForge([file("main.go", 20, 0), file("README.md")]), DemoReviewer(), judge)
+    engine = EvaluationEngine(ConfigStore(EXAMPLES), DemoForge([file("main.go", 20, 0), file("README.md")]), DemoReviewer(), judge)
     _, result = await engine.evaluate(REF)
     assert result.state == "human_review"
     assert judge.calls == 1
@@ -152,7 +153,7 @@ async def test_all_group_requires_custom_rule_after_complexity_passes():
             return GateResult(state="reject" if rule.type == "llm_custom" else "pass", reason="Unsafe interface change")
 
     judge = RejectSafety()
-    engine = EvaluationEngine(ConfigStore(ROOT), DemoForge([file("main.go")]), DemoReviewer(), judge)
+    engine = EvaluationEngine(ConfigStore(EXAMPLES), DemoForge([file("main.go")]), DemoReviewer(), judge)
     _, result = await engine.evaluate(REF)
     assert result.state == "human_review"
     assert result.matched_rule is None
@@ -165,7 +166,7 @@ async def test_coderabbit_status_does_not_satisfy_expected_ci():
     forge = DemoForge([file("go.mod"), file("go.sum")])
     forge.checks = [Check(name="CodeRabbit", source="coderabbitai[bot]", status="completed", conclusion="success")]
     judge = DemoJudge()
-    engine = EvaluationEngine(ConfigStore(ROOT), forge, DemoReviewer(), judge)
+    engine = EvaluationEngine(ConfigStore(EXAMPLES), forge, DemoReviewer(), judge)
     _, result = await engine.evaluate(REF)
     assert result.state == "waiting"
     assert "expected CI check: lint" in result.reasons[0]
@@ -176,7 +177,7 @@ async def test_coderabbit_status_does_not_satisfy_expected_ci():
 async def test_coderabbit_status_failure_blocks_merge_when_observed():
     forge = DemoForge([file("go.mod"), file("go.sum")])
     forge.checks[-1] = Check(name="CodeRabbit", source="coderabbitai[bot]", status="completed", conclusion="failure")
-    engine = EvaluationEngine(ConfigStore(ROOT), forge, DemoReviewer(), DemoJudge())
+    engine = EvaluationEngine(ConfigStore(EXAMPLES), forge, DemoReviewer(), DemoJudge())
     _, result = await engine.evaluate(REF)
     assert result.state == "human_review"
     assert "CI check CodeRabbit concluded failure" in result.reasons[0]
@@ -186,7 +187,7 @@ async def test_coderabbit_status_failure_blocks_merge_when_observed():
 async def test_llm_cap_uses_shared_generated_file_exclusion():
     judge = DemoJudge()
     engine = EvaluationEngine(
-        ConfigStore(ROOT),
+        ConfigStore(EXAMPLES),
         DemoForge([file("main.go"), file("go.sum", 150, 0)]),
         DemoReviewer(), judge,
     )
@@ -198,7 +199,7 @@ async def test_llm_cap_uses_shared_generated_file_exclusion():
 @pytest.mark.asyncio
 async def test_custom_llm_rule_has_independent_cap(tmp_path):
     (tmp_path / "config").mkdir()
-    (tmp_path / "config/global.yaml").write_text((ROOT / "config/global.yaml").read_text())
+    (tmp_path / "config/global.yaml").write_text((EXAMPLES / "config/global.yaml").read_text())
     repo_dir = tmp_path / "configs/github.com/mprahl/test-automerge"
     repo_dir.mkdir(parents=True)
     (repo_dir / "OWNERS").write_text("approvers: [mprahl]\n")
@@ -224,7 +225,7 @@ rules:
 @pytest.mark.asyncio
 async def test_author_restriction_inside_all_group_skips_llm_for_other_trusted_authors(tmp_path):
     (tmp_path / "config").mkdir()
-    (tmp_path / "config/global.yaml").write_text((ROOT / "config/global.yaml").read_text())
+    (tmp_path / "config/global.yaml").write_text((EXAMPLES / "config/global.yaml").read_text())
     repo_dir = tmp_path / "configs/github.com/mprahl/test-automerge"
     repo_dir.mkdir(parents=True)
     (repo_dir / "OWNERS").write_text("approvers: [mprahl]\n")
@@ -257,14 +258,14 @@ rules:
 @pytest.mark.asyncio
 async def test_llm_context_uses_agents_and_explicit_base_files(tmp_path):
     (tmp_path / "config").mkdir()
-    (tmp_path / "config/global.yaml").write_text((ROOT / "config/global.yaml").read_text())
+    (tmp_path / "config/global.yaml").write_text((EXAMPLES / "config/global.yaml").read_text())
     (tmp_path / "profiles").mkdir()
-    (tmp_path / "profiles/go-dependencies.yaml").write_text((ROOT / "profiles/go-dependencies.yaml").read_text())
+    (tmp_path / "profiles/go-dependencies.yaml").write_text((EXAMPLES / "profiles/go-dependencies.yaml").read_text())
     repo_dir = tmp_path / "configs/github.com/mprahl/test-automerge"
     repo_dir.mkdir(parents=True)
     (repo_dir / "OWNERS").write_text("approvers: [mprahl]\n")
     (repo_dir / "config.yaml").write_text(
-        (ROOT / "configs/github.com/mprahl/test-automerge/config.yaml").read_text()
+        (EXAMPLES / "configs/github.com/mprahl/test-automerge/config.yaml").read_text()
         + "\nllm_context_files: [docs/merge-policy.md]\n"
     )
     (repo_dir / "context.md").write_text("Policy checkout guidance")
@@ -294,6 +295,6 @@ async def test_llm_context_falls_back_to_claude():
     forge = DemoForge([file("main.go")])
     forge.repository_files = {"CLAUDE.md": "Fallback instructions"}
     judge = DemoJudge()
-    _, result = await EvaluationEngine(ConfigStore(ROOT), forge, DemoReviewer(), judge).evaluate(REF)
+    _, result = await EvaluationEngine(ConfigStore(EXAMPLES), forge, DemoReviewer(), judge).evaluate(REF)
     assert result.state == "eligible"
     assert judge.context == {"repository/CLAUDE.md": "Fallback instructions"}

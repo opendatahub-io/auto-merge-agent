@@ -19,6 +19,7 @@ dependencies = [
 
 [project.optional-dependencies]
 test = ["pytest>=8,<10", "pytest-asyncio>=0.24,<2", "respx>=0.22,<1"]
+deployment = ["kubernetes>=31,<38"]
 
 [project.scripts]
 auto-merge-agent = "auto_merge_agent.cli:main"

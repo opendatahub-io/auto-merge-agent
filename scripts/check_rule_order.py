@@ -9,12 +9,14 @@ from auto_merge_agent.rule_order import rule_order_errors
 
 
 def main() -> int:
-    store = ConfigStore(Path(__file__).resolve().parents[1])
+    repo = Path(__file__).resolve().parents[1]
     errors = []
-    for slug in store.validate_all():
-        host, owner, repo = slug.split("/")
-        rules = store.load(host, owner, repo).policy.rules
-        errors.extend(rule_order_errors(rules, slug))
+    for root in [repo / "examples", repo / "deploy/policy"]:
+        store = ConfigStore(root)
+        for slug in store.validate_all():
+            host, owner, repo_name = slug.split("/")
+            rules = store.load(host, owner, repo_name).policy.rules
+            errors.extend(rule_order_errors(rules, slug))
     if errors:
         print("\n".join(errors))
         return 1

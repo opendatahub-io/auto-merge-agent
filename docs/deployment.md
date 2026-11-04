@@ -2,14 +2,17 @@
 
 The Git repository contains the agent code and policies. Run it as a GitHub App receiving webhooks or as a process that polls with a GitHub token. A container image is optional.
 
+For a cluster deployment, see [OpenShift and Kubernetes deployment](openshift.md).
+
 ## Run with a GitHub token
 
-Create repository configs and validate them with `uv run auto-merge-agent validate-config`. The token's repository access and the enabled configs together determine which repositories are scanned. For a fine-grained personal access token, grant **Pull requests: read and write**, **Contents: read and write** for merging, **Checks: read**, **Commit statuses: read and write**, and **Issues: read and write** for comments. Shadow mode only reads. A classic token needs access to those repositories and suitable `repo` scope. [GitHub documents commit status permissions](https://docs.github.com/en/rest/commits/statuses) and [check-run writes are limited to GitHub Apps](https://docs.github.com/en/rest/checks/runs), so token mode publishes an `automerge/policy` commit status instead of a check run.
+Create repository configs under `deploy/policy/` and validate them with `uv run auto-merge-agent --config-root deploy/policy validate-config`. For local trials, use `examples/` as the policy root instead. The token's repository access and the enabled configs together determine which repositories are scanned. For a fine-grained personal access token, grant **Pull requests: read and write**, **Contents: read and write** for merging, **Checks: read**, **Commit statuses: read and write**, and **Issues: read and write** for comments. Shadow mode only reads. A classic token needs access to those repositories and suitable `repo` scope. [GitHub documents commit status permissions](https://docs.github.com/en/rest/commits/statuses) and [check-run writes are limited to GitHub Apps](https://docs.github.com/en/rest/checks/runs), so token mode publishes an `automerge/policy` commit status instead of a check run.
 
 ```bash
 cd /path/to/auto-merge-agent
 uv sync --locked
-export AUTOMERGE_CONFIG_ROOT="$PWD"
+export AUTOMERGE_CONFIG_ROOT="$PWD/deploy/policy"
+uv run auto-merge-agent validate-config
 uv run auto-merge-agent poll --interval 900
 ```
 
@@ -46,7 +49,7 @@ Subscribe to `pull_request`, `pull_request_review`, `pull_request_review_comment
 | `GITHUB_APP_ID` | Yes | Numeric App ID from its GitHub settings. |
 | `GITHUB_APP_PRIVATE_KEY_FILE` or `GITHUB_APP_PRIVATE_KEY` | Yes | PEM private key path or contents. Keep outside Git. |
 | `GITHUB_WEBHOOK_SECRET` | Yes for webhooks | Must match the App's webhook secret. |
-| `AUTOMERGE_CONFIG_ROOT` | Recommended | Protected checkout containing `config/`, `configs/`, and `profiles/`; defaults to the working directory. |
+| `AUTOMERGE_CONFIG_ROOT` | Recommended | Policy root containing `config/`, `configs/`, and optional `profiles/`. Set it to `deploy/policy/` in a protected checkout, or `examples/` for local trials; the CLI defaults to the working directory. |
 | `AUTOMERGE_ACTIVE` | No | `false` by default. Set `true` to publish checks/comments and merge eligible PRs. |
 | `OPENAI_API_KEY` | For OpenAI LLM rules | OpenAI Platform project API key. Static-only rules do not use it. |
 | `MLFLOW_TRACKING_URI` | No | MLflow server for LangGraph traces. |
@@ -65,7 +68,8 @@ unset GITHUB_TOKEN
 export GITHUB_APP_ID=APP_ID
 export GITHUB_APP_PRIVATE_KEY_FILE=/path/to/app-private-key.pem
 export GITHUB_WEBHOOK_SECRET=WEBHOOK_SECRET
-export AUTOMERGE_CONFIG_ROOT="$PWD"
+export AUTOMERGE_CONFIG_ROOT="$PWD/deploy/policy"
+uv run auto-merge-agent validate-config
 uv run auto-merge-agent serve --host 0.0.0.0 --port 8000
 ```
 
@@ -75,8 +79,8 @@ For local development, GitHub cannot call `localhost`. Its [webhook testing guid
 
 ## Roll out safely
 
-1. Add a repo config with exact expected CI check names and an `OWNERS` file. Keep `enabled: false` until the target repo has its CI and reviewer integration.
-2. Validate the agent checkout with `uv run auto-merge-agent validate-config`. Set `enabled: true`, keep `AUTOMERGE_ACTIVE=false`, and inspect decisions with the read-only `evaluate OWNER REPO PR_NUMBER` CLI. The shadow service makes no PR writes.
+1. Select the policy root with `AUTOMERGE_CONFIG_ROOT` as shown above. Add a repo config under that root with exact expected CI check names and an `OWNERS` file. Keep `enabled: false` until the target repo has its CI and reviewer integration.
+2. Validate the selected policy root with `uv run auto-merge-agent validate-config`. Set `enabled: true`, keep `AUTOMERGE_ACTIVE=false`, and inspect decisions with the read-only `evaluate OWNER REPO PR_NUMBER` CLI. The shadow service makes no PR writes.
 3. Verify webhook deliveries in the App's **Advanced → Recent deliveries** page. Use the CLI to inspect decisions; check service logs for errors or MLflow traces when configured.
 4. Enable `AUTOMERGE_ACTIVE=true` for an intentionally scoped installation. The service can merge **any** open PR in an enabled repo that meets policy, including existing PRs. It posts an informational policy check and a checklist comment around each merge attempt.
 

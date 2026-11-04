@@ -1,0 +1,23 @@
+schema_version: 1
+allowed_models:
+  - gpt-6-sol
+defaults:
+  enabled: false
+  review:
+    plugin: coderabbit
+    max_merge_risk: moderate
+    max_finding_severity: medium
+  ci:
+    expected: []
+    ignore:
+      - name: tide
+    min_successful_checks: 1
+  limits:
+    max_changed_lines: 200
+    exclude_from_line_count: []
+  merge:
+    method: squash
+  human_review:
+    comment: true
+    mention: []
+  rules: []

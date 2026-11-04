@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auto-merge-agent
+spec:
+  template:
+    spec:
+      volumes:
+        - name: policy
+          configMap:
+            name: auto-merge-agent-policy
+            items:
+              - key: OWNERS
+                path: OWNERS
+              - key: global.yaml
+                path: config/global.yaml
+              - key: opendatahub-io-agent-og-auto-merge-test-config.yaml
+                path: configs/github.com/opendatahub-io/agent-og-auto-merge-test/config.yaml
+              - key: opendatahub-io-agent-og-auto-merge-test-OWNERS
+                path: configs/github.com/opendatahub-io/agent-og-auto-merge-test/OWNERS
