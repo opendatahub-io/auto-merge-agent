@@ -51,7 +51,8 @@ Subscribe to `pull_request`, `pull_request_review`, `pull_request_review_comment
 | `GITHUB_WEBHOOK_SECRET` | Yes for webhooks | Must match the App's webhook secret. |
 | `AUTOMERGE_CONFIG_ROOT` | Recommended | Policy root containing `config/`, `configs/`, and optional `profiles/`. Set it to `deploy/policy/` in a protected checkout, or `examples/` for local trials; the CLI defaults to the working directory. |
 | `AUTOMERGE_ACTIVE` | No | `false` by default. Set `true` to publish checks/comments and merge eligible PRs. |
-| `OPENAI_API_KEY` | For OpenAI LLM rules | OpenAI Platform project API key. Static-only rules do not use it. |
+| `OPENAI_API_KEY` | For OpenAI LLM rules | OpenAI Platform project API key, or the key for an OpenAI-compatible gateway. Static-only rules do not use it. |
+| `OPENAI_BASE_URL` | For gateway-backed LLM rules | Base URL of an OpenAI-compatible gateway, including its API prefix (typically `/v1`). Required for rules whose model uses the `openai:` provider prefix: without it (or `OPENAI_API_BASE`), those rules wait instead of sending the evaluation and its credentials to the default OpenAI endpoint. Set it to `https://api.openai.com/v1` to use the OpenAI API directly. |
 | `MLFLOW_TRACKING_URI` | No | MLflow server for LangGraph traces. |
 | `MLFLOW_EXPERIMENT` | No | MLflow experiment name; defaults to `auto-merge-agent`. |
 

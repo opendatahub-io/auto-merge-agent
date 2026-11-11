@@ -131,9 +131,11 @@ The key file is read-only and readable by the arbitrary container UID; its volum
 is accessible only to the agent container. Do not supply `GITHUB_TOKEN` to this
 deployment: the webhook service rejects token authentication.
 
-For OpenAI-backed rules, optionally create `auto-merge-agent-openai` with key
-`api-key`, for example `--from-file=api-key=/secure/openai-api-key`. Static-only
-policies require no OpenAI Secret. For a private Quay repository, create a registry
+For OpenAI-backed rules, optionally create `auto-merge-agent-openai` with keys
+`api-key` and `base-url`, for example `--from-file=api-key=/secure/openai-api-key`
+`--from-literal=base-url=https://gateway.example/v1`. Without `base-url`, calls go
+to the OpenAI API directly; an OpenAI-compatible gateway URL must include its API
+prefix (typically `/v1`). Static-only policies require no OpenAI Secret. For a private Quay repository, create a registry
 pull Secret and link it to the service account after creating it:
 
 ```bash
