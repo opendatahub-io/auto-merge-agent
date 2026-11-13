@@ -30,11 +30,11 @@ rules:
       - name: maintenance-complexity
         type: llm_complexity
         max: low
-        model: gpt-6-sol
+        model: openai:rits/zai-org/glm-5-3
         max_changed_lines: 100
       - name: maintenance-safety
         type: llm_custom
-        model: gpt-6-sol
+        model: openai:rits/zai-org/glm-5-3
         max_changed_lines: 100
         prompt: >-
           Decide whether this is a small, well-scoped maintenance correction
