@@ -75,6 +75,12 @@ spec:
                   name: auto-merge-agent-openai
                   key: api-key
                   optional: true
+            - name: OPENAI_BASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: auto-merge-agent-openai
+                  key: base-url
+                  optional: true
           securityContext:
             allowPrivilegeEscalation: false
             readOnlyRootFilesystem: true

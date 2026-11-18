@@ -1,6 +1,6 @@
 schema_version: 1
 allowed_models:
-  - gpt-6-sol
+  - openai:rits/zai-org/glm-5-3
 defaults:
   enabled: false
   review:

@@ -128,7 +128,7 @@ llm_context_files:
 
 Target-repository files are read at the PR's base commit. This keeps a PR from changing the guidance used to evaluate itself. Explicitly listed files must exist at that commit; a missing file requires human review, while an API read failure makes the decision wait. Missing `AGENTS.md` and `CLAUDE.md` are allowed. Each context file must be UTF-8 and at most 20 KB; the combined LLM input limit is 100,000 characters. Context guides both complexity and custom judgments but cannot override mandatory gates. A change to the policy checkout's `context.md` changes the config revision.
 
-Model IDs are listed directly in `config/global.yaml:allowed_models`. A repo may select only an allowed ID. LangChain infers providers for recognized model names; use the same `provider:model-id` string in both places when provider inference is ambiguous. OpenAI models require `OPENAI_API_KEY` at runtime. Do not store API keys in YAML.
+Model IDs are listed directly in `config/global.yaml:allowed_models`. A repo may select only an allowed ID. LangChain infers providers for recognized model names; use the same `provider:model-id` string in both places when provider inference is ambiguous. OpenAI models require `OPENAI_API_KEY` at runtime. Models with the `openai:` provider prefix additionally require `OPENAI_BASE_URL` (or `OPENAI_API_BASE`); without one, the rule waits rather than sending the evaluation to the default OpenAI endpoint. Do not store API keys in YAML.
 
 ## Policy recipes
 

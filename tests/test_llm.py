@@ -89,3 +89,36 @@ async def test_repository_context_reaches_both_model_calls(monkeypatch):
     assert [schema for schema, _ in calls] == [ComplexityAnswer, SafetyAnswer]
     assert all("Check API compatibility" in user for _, user in calls)
     assert all("new mode 100755" in user for _, user in calls)
+
+
+@pytest.mark.asyncio
+async def test_openai_provider_model_requires_explicit_base_url(monkeypatch):
+    judge = LangChainJudge(["openai:rits/zai-org/glm-5-3", "gpt-6-sol"])
+    monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
+    monkeypatch.delenv("OPENAI_API_BASE", raising=False)
+    file = ChangedFile(path="main.go", status="modified", additions=1, deletions=1,
+        patch="@@ -1 +1 @@\n-old\n+new")
+
+    async def unexpected(*args):
+        pytest.fail("openai: model must not be called without an explicit base URL")
+
+    monkeypatch.setattr(judge, "_ask", unexpected)
+    rule = RuleConfig(name="safety", type="llm_custom", model="openai:rits/zai-org/glm-5-3", prompt="Safe?")
+    verdict = await judge.evaluate(rule, [file], "Fix", "")
+    assert verdict.state == "wait"
+    assert "OPENAI_BASE_URL" in verdict.reason
+
+    # Bare model names keep LangChain provider inference and are unaffected.
+    async def answer(*args):
+        return SafetyAnswer(safe_to_merge=True, reason="Small fix")
+
+    monkeypatch.setattr(judge, "_ask", answer)
+    rule = RuleConfig(name="safety", type="llm_custom", model="gpt-6-sol", prompt="Safe?")
+    verdict = await judge.evaluate(rule, [file], "Fix", "")
+    assert verdict.state == "pass"
+
+    # An explicit base URL is the opt-in, including one pointing back at OpenAI.
+    rule = RuleConfig(name="safety", type="llm_custom", model="openai:rits/zai-org/glm-5-3", prompt="Safe?")
+    monkeypatch.setenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+    verdict = await judge.evaluate(rule, [file], "Fix", "")
+    assert verdict.state == "pass"

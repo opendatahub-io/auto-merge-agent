@@ -1,11 +1,22 @@
 from __future__ import annotations
 
 import json
+import os
 from typing import Literal
 
 from pydantic import Field
 
 from .types import ChangedFile, GateResult, RuleConfig, StrictModel
+
+
+def _routes_to_default_openai_endpoint(model: str) -> bool:
+    """Whether an ``openai:`` model would reach the public OpenAI endpoint.
+
+    An explicit ``OPENAI_BASE_URL`` (or ``OPENAI_API_BASE``) is the deployment's
+    opt-in to that endpoint; it may legitimately point back at OpenAI itself.
+    """
+    provider = model.split(":", 1)[0] if ":" in model else None
+    return provider == "openai" and not (os.environ.get("OPENAI_BASE_URL") or os.environ.get("OPENAI_API_BASE"))
 
 
 class ComplexityAnswer(StrictModel):
@@ -38,6 +49,8 @@ class LangChainJudge:
     async def evaluate(self, rule: RuleConfig, files: list[ChangedFile], title: str, body: str, context: dict[str, str] | None = None) -> GateResult:
         if any(not file.has_complete_patch for file in files):
             return GateResult(state="reject", reason="Full text diff unavailable for LLM evaluation")
+        if _routes_to_default_openai_endpoint(rule.model):
+            return GateResult(state="wait", reason=f"Model {rule.model} requires OPENAI_BASE_URL; refusing to send evaluation traffic to the default OpenAI endpoint")
         payload = json.dumps({"title": title, "body": body, "files": [{"path": file.path, "previous_path": file.previous_path, "status": file.status, "patch": file.patch, "diff_metadata": file.diff_metadata} for file in files], "repository_context": context or {}})
         if len(payload) > 100_000:
             return GateResult(state="reject", reason="LLM input exceeds evaluation limit")
